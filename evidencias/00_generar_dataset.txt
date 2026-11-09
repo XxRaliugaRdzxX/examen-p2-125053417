@@ -1,0 +1,21 @@
+$ time python3 ../scripts/generar_dataset.py 125053417
+Generando dataset para 125053417... (tarda unos minutos)
+Listo
+
+real	0m28.233s
+user	0m27.637s
+sys	0m0.490s
+
+$ ls -lh
+total 336M
+-rw-rw-r-- 1 rali36 rali36 336M Nov  9 11:35 ventas_125053417.csv
+
+$ head -5 ventas_125053417.csv
+id,fecha_hora,tienda,categoria,producto,cantidad,precio_unitario,metodo_pago
+1,2025-04-27 04:56:16,T016,Mascotas,MAS-0027,7,1538.83,Tarjeta
+2,2025-10-26 07:28:57,T011,Papeleria,PAP-0027,12,1298.38,Transferencia
+3,2025-09-13 07:00:15,T002,Papeleria,PAP-0005,8,567.11,Transferencia
+4,2025-07-14 01:37:15,T023,Mascotas,MAS-0011,10,2323.95,Transferencia
+
+$ wc -l ventas_125053417.csv
+5000001 ventas_125053417.csv

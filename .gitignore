@@ -1,0 +1,20 @@
+# Dataset (no se sube al repo)
+*.csv
+data/
+
+# Variables de entorno reales
+.env
+
+# Llaves SSH generadas
+*.pem
+id_rsa*
+id_ed25519*
+
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+
+# Salidas locales
+output/

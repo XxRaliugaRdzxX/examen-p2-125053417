@@ -1,0 +1,51 @@
+$ curl -s http://localhost:5000/
+{"endpoints":["GET /resultados","GET /resultados/<producto>","POST /resultados","PUT /resultados/<producto>","DELETE /resultados/<producto>"],"pregunta":"Top 10 productos por ingreso total (cantidad x precio_unitario) en todo el anio","servicio":"DataMart - API de resultados MapReduce"}
+
+[HTTP 200]
+
+$ curl -s http://localhost:5000/resultados
+[{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":1,"ingreso_total":134282004.32,"posicion":1,"producto":"ROP-0030"},{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":2,"ingreso_total":134147463.65,"posicion":2,"producto":"ROP-0019"},{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":3,"ingreso_total":133589518.17,"posicion":3,"producto":"ROP-0018"},{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":4,"ingreso_total":133365306.08,"posicion":4,"producto":"ROP-0001"},{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":5,"ingreso_total":133360554.17,"posicion":5,"producto":"ROP-0025"},{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":6,"ingreso_total":133102660.03,"posicion":6,"producto":"ROP-0003"},{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":7,"ingreso_total":132962929.29,"posicion":7,"producto":"ROP-0011"},{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":8,"ingreso_total":132885729.3,"posicion":8,"producto":"ROP-0029"},{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":9,"ingreso_total":132851283.37,"posicion":9,"producto":"ROP-0020"},{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":10,"ingreso_total":132806544.36,"posicion":10,"producto":"ROP-0017"}]
+
+[HTTP 200]
+
+$ curl -s http://localhost:5000/resultados/ROP-0030
+{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":1,"ingreso_total":134282004.32,"posicion":1,"producto":"ROP-0030"}
+
+[HTTP 200]
+
+$ curl -s http://localhost:5000/resultados/rop-0019
+{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":2,"ingreso_total":134147463.65,"posicion":2,"producto":"ROP-0019"}
+
+[HTTP 200]
+
+$ curl -s http://localhost:5000/resultados/XXX-9999
+{"error":"Producto XXX-9999 no encontrado"}
+
+[HTTP 404]
+
+--- Escritura: POST / PUT / DELETE ---
+$ curl -s -X POST http://localhost:5000/resultados -H Content-Type: application/json -d {"producto":"DEMO-0001","categoria":"Demo","ingreso_total":1234.56,"posicion":99}
+{"cargado_en":"2026-11-09T17:41:21.937446","categoria":"Demo","id":11,"ingreso_total":1234.56,"posicion":99,"producto":"DEMO-0001"}
+
+[HTTP 201]
+
+$ curl -s -X POST http://localhost:5000/resultados -H Content-Type: application/json -d {"producto":"DEMO-0001","categoria":"Demo","ingreso_total":1}
+{"error":"El producto DEMO-0001 ya existe"}
+
+[HTTP 409]
+
+$ curl -s -X PUT http://localhost:5000/resultados/DEMO-0001 -H Content-Type: application/json -d {"ingreso_total":9999.99}
+{"cargado_en":"2026-11-09T17:41:21.937446","categoria":"Demo","id":11,"ingreso_total":9999.99,"posicion":99,"producto":"DEMO-0001"}
+
+[HTTP 200]
+
+$ curl -s -X DELETE http://localhost:5000/resultados/DEMO-0001
+{"mensaje":"Producto DEMO-0001 eliminado"}
+
+[HTTP 200]
+
+$ curl -s http://localhost:5000/resultados/DEMO-0001
+{"error":"Producto DEMO-0001 no encontrado"}
+
+[HTTP 404]
+

@@ -1,0 +1,23 @@
+$ docker compose exec hadoop hadoop version
+Hadoop 3.4.1
+Source code repository https://github.com/apache/hadoop.git -r 4d7825309348956336b8f06a08322b78422849b1
+Compiled by mthakur on 2024-10-09T14:57Z
+Compiled on platform linux-x86_64
+Compiled with protoc 3.23.4
+From source with checksum 7292fe9dba5e2e44e3a9f763fce3e680
+This command was run using /opt/hadoop/share/hadoop/common/hadoop-common-3.4.1.jar
+
+$ docker compose exec hadoop bash -c 'echo JAVA_HOME=$JAVA_HOME; echo HADOOP_HOME=$HADOOP_HOME; echo PATH=$PATH; java -version'
+JAVA_HOME=/usr/lib/jvm/default-java
+HADOOP_HOME=/opt/hadoop
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hadoop/bin:/opt/hadoop/sbin
+openjdk version "17.0.21" 2026-10-20
+OpenJDK Runtime Environment (build 17.0.21+9-1-deb12u1-Debian)
+OpenJDK 64-Bit Server VM (build 17.0.21+9-1-deb12u1-Debian, mixed mode, sharing)
+
+$ docker compose exec hadoop ls -lh /data/input
+total 336M
+-rw-rw-r-- 1 hadoop hadoop 336M Nov  9 17:35 ventas_125053417.csv
+
+$ docker compose exec hadoop touch /data/input/prueba   # debe fallar: solo lectura
+touch: cannot touch '/data/input/prueba': Read-only file system

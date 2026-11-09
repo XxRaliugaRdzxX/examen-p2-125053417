@@ -1,0 +1,25 @@
+$ time docker compose exec -u hadoop hadoop python3 /opt/mapreduce/secuencial.py /data/input/ventas_125053417.csv > output/secuencial.txt
+Lineas malformadas ignoradas: 0
+
+real	0m4.527s
+user	0m0.080s
+sys	0m0.044s
+
+$ cat output/secuencial.txt
+1	ROP-0030	Ropa	134282004.32
+2	ROP-0019	Ropa	134147463.65
+3	ROP-0018	Ropa	133589518.17
+4	ROP-0001	Ropa	133365306.08
+5	ROP-0025	Ropa	133360554.17
+6	ROP-0003	Ropa	133102660.03
+7	ROP-0011	Ropa	132962929.29
+8	ROP-0029	Ropa	132885729.30
+9	ROP-0020	Ropa	132851283.37
+10	ROP-0017	Ropa	132806544.36
+
+$ diff output/top10/part-00000 output/secuencial.txt && echo "RESULTADOS IDENTICOS"
+RESULTADOS IDENTICOS
+
+$ md5sum output/top10/part-00000 output/secuencial.txt
+054b81092e677816280b0d14f79badde  output/top10/part-00000
+054b81092e677816280b0d14f79badde  output/secuencial.txt

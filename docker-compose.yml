@@ -1,0 +1,50 @@
+services:
+  hadoop:
+    build: ./hadoop
+    hostname: hadoop
+    init: true
+    volumes:
+      - ${DATA_DIR:-./data}:/data/input:ro   # dataset de solo lectura
+      - ./mapreduce:/opt/mapreduce           # mapper/reducer editables sin reconstruir
+      - ./output:/data/output                # salida del job (part-00000)
+      - ssh_keys:/ssh-keys                   # llaves SSH compartidas con api
+    networks:
+      - datamart_net
+
+  db:
+    image: postgres:16-alpine
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data      # volumen nombrado (persistencia)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - datamart_net
+
+  api:
+    build: ./api
+    env_file: .env
+    ports:
+      - "${API_PORT:-5000}:5000"
+    volumes:
+      - ./scripts:/app/scripts:ro            # cargar_resultados.py
+      - ./output:/data/output:ro             # lee el part-00000 del job
+      - ssh_keys:/ssh-keys:ro                # llave privada para ssh hadoop@hadoop
+    depends_on:
+      db:
+        condition: service_healthy
+      hadoop:
+        condition: service_started
+    networks:
+      - datamart_net
+
+volumes:
+  pgdata:
+  ssh_keys:
+
+networks:
+  datamart_net:
+    driver: bridge
