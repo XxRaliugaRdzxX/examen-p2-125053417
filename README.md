@@ -11,22 +11,6 @@ Pipeline reproducible para la cadena **DataMart**: el dataset se procesa con **H
 
 ---
 
-## Arquitectura
-
-```
-                 ┌──────────────────────────── red: datamart_net ────────────────────────────┐
-                 │                                                                            │
- ./data/*.csv ──►│  hadoop (Debian + Java 17 + Python 3 + Hadoop 3.4.1 standalone + sshd)     │
-  (solo lectura) │     /data/input  ──► mapper.py / reducer.py ──► /data/output/top10/part-00000
-                 │        ▲ ssh hadoop@hadoop (llave, sin contraseña)          │              │
-                 │        │                                                    ▼ (./output)   │
-                 │  api (Flask + gunicorn) ◄── cargar_resultados.py ◄──────────┘              │
- :5000 ◄─────────│     │                                                                      │
-                 │     ▼  psycopg2 (host = "db")                                              │
-                 │  db (PostgreSQL 16) ──► volumen nombrado pgdata                            │
-                 └────────────────────────────────────────────────────────────────────────────┘
-```
-
 | Servicio | Imagen | Función |
 |---|---|---|
 | `hadoop` | `hadoop/Dockerfile` (debian:bookworm-slim) | Ejecuta el job MapReduce y corre el servidor OpenSSH |
@@ -38,25 +22,25 @@ Pipeline reproducible para la cadena **DataMart**: el dataset se procesa con **H
 ```
 examen-p2-125053417/
 ├── README.md
-├── .gitignore              # excluye *.csv, data/, output/ y .env
-├── .env.example            # plantilla de variables (sin credenciales reales)
+├── .gitignore           
+├── .env.example           
 ├── docker-compose.yml
 ├── hadoop/
 │   ├── Dockerfile
-│   └── entrypoint.sh       # genera llaves SSH en tiempo de ejecución y arranca sshd
+│   └── entrypoint.sh      
 ├── mapreduce/
 │   ├── mapper.py
 │   ├── reducer.py
 │   ├── secuencial.py
-│   └── ejecutar_job.sh     # comando de Hadoop Streaming
+│   └── ejecutar_job.sh   
 ├── api/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── app.py
 ├── scripts/
 │   ├── cargar_resultados.py
-│   └── generar_dataset.py  # script del Paso 0
-└── evidencias/             # logs y capturas
+│   └── generar_dataset.py 
+└── evidencias/           
 ```
 
 ---
@@ -119,19 +103,6 @@ curl http://localhost:5000/resultados/ROP-0030
 - `api`: el CRUD en Flask. Usa `depends_on: db (condition: service_healthy)` y se conecta con `POSTGRES_HOST=db`.
 - Los tres servicios están en la red definida `datamart_net` (bridge).
 
-### Captura: `hadoop version`
-
-![hadoop version](evidencias/capturas/hadoop_version.png)
-
-```
-$ docker compose exec hadoop hadoop version
-Hadoop 3.4.1
-Source code repository https://github.com/apache/hadoop.git -r 4d7825309348956336b8f06a08322b78422849b1
-Compiled by mthakur on 2024-10-09T14:57Z
-This command was run using /opt/hadoop/share/hadoop/common/hadoop-common-3.4.1.jar
-```
-
----
 
 ## Parte B. SSH
 
@@ -141,30 +112,6 @@ This command was run using /opt/hadoop/share/hadoop/common/hadoop-common-3.4.1.j
 - `sshd_config` usa `PasswordAuthentication no` y `PermitRootLogin no`. El usuario `hadoop` **no tiene contraseña** (`usermod -p '*'`), así que **no hay contraseñas en texto plano** en ningún Dockerfile.
 - Las llaves de host se guardan en el volumen para que no cambien al recrear el contenedor.
 
-### Captura: `ssh` sin contraseña
-
-![ssh localhost](evidencias/capturas/ssh_localhost.png)
-![ssh api -> hadoop](evidencias/capturas/ssh_api_hadoop.png)
-
-```
-# 1) Dentro del contenedor hadoop
-$ docker compose exec -u hadoop hadoop ssh localhost "whoami; hostname; hadoop version | head -1"
-hadoop
-hadoop
-Hadoop 3.4.1
-
-# 2) Desde el contenedor api hacia hadoop, por nombre de servicio
-$ docker compose exec api ssh hadoop@hadoop "whoami; hostname; hadoop version | head -1"
-hadoop
-hadoop
-Hadoop 3.4.1
-
-# 3) El acceso con contraseña está deshabilitado
-$ docker compose exec api ssh -o PubkeyAuthentication=no -o BatchMode=yes hadoop@hadoop true
-hadoop@hadoop: Permission denied (publickey).
-```
-
----
 
 ## Parte C. Procesamiento con MapReduce
 
@@ -189,23 +136,6 @@ hadoop jar $HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming-3.4.1.jar \
     -input /data/input \
     -output /data/output/top10
 ```
-
-### Captura: salida del job
-
-![salida del job](evidencias/capturas/salida_job.png)
-
-```
-INFO mapreduce.Job: Job job_local1478889195_0001 completed successfully
-INFO mapreduce.Job: Counters: 31
-        Map input records=5000001
-        Map output records=5000000
-        Reduce input groups=514
-        Reduce output records=10
-    DataMart
-        Encabezados=1
-```
-
-Se leyeron 5,000,001 líneas: 1 encabezado y 5,000,000 ventas válidas. No hubo líneas mal formadas en este dataset. La función de ignorarlas se probó aparte con líneas corruptas añadidas a mano. Se encontraron 514 productos distintos.
 
 ### Resultado (`part-00000`)
 
@@ -290,24 +220,6 @@ La API se adaptó de mi proyecto anterior **flaskcrud** (Flask + MySQL, tabla `c
 | PUT | `/resultados/<producto>` | Actualiza `posicion`, `categoria` o `ingreso_total` | 200 / 404 |
 | DELETE | `/resultados/<producto>` | Elimina un registro | 200 / 404 |
 
-### Captura: respuesta de la API
-
-![respuesta de la API](evidencias/capturas/api_resultados.png)
-
-```
-$ curl -s http://localhost:5000/resultados/ROP-0030
-{"cargado_en":"2026-11-09T17:41:15.727270","categoria":"Ropa","id":1,"ingreso_total":134282004.32,"posicion":1,"producto":"ROP-0030"}
-
-$ curl -s -X POST http://localhost:5000/resultados -H 'Content-Type: application/json' \
-       -d '{"producto":"DEMO-0001","categoria":"Demo","ingreso_total":1234.56,"posicion":99}'
-{"cargado_en":"2026-11-09T17:41:21.937446","categoria":"Demo","id":11,"ingreso_total":1234.56,"posicion":99,"producto":"DEMO-0001"}   [HTTP 201]
-
-$ curl -s -X PUT http://localhost:5000/resultados/DEMO-0001 -H 'Content-Type: application/json' -d '{"ingreso_total":9999.99}'
-{"cargado_en":"2026-11-09T17:41:21.937446","categoria":"Demo","id":11,"ingreso_total":9999.99,"posicion":99,"producto":"DEMO-0001"}   [HTTP 200]
-
-$ curl -s -X DELETE http://localhost:5000/resultados/DEMO-0001
-{"mensaje":"Producto DEMO-0001 eliminado"}   [HTTP 200]
-```
 
 ### Persistencia tras `docker compose down` / `up`
 
